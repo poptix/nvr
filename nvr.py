@@ -1,17 +1,17 @@
 #! /usr/bin/python3
 
 import os
-from io import BytesIO
 import numpy as np
-from PIL import Image
+import cv2
 import mysql.connector
+import settings
+import subprocess
+import sys
 from mysql.connector import Error
 from mysql.connector import errorcode
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-import settings
-import subprocess
-import sys
+from io import BytesIO
 
 
 
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS images (
 
 # Function to convert an image file to a NumPy array
 def convert_image_to_numpy(image_path):
-    img = Image.open(image_path)
+    img = cv2.imread(image_path)
     img_array = np.array(img)
     return img_array
 
