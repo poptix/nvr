@@ -20,3 +20,7 @@ OPENAPI_OPENALPR_HOST = 'https://openalpr.p.rapidapi.com'
 OPENAPI_OPENALPR_API_KEY = 'abc123'
 OPENAPI_OPENALPR_COUNTRY = 'USA'
 
+# Pushover.net notifications
+PUSHOVER_API_KEY = 'This is the application/API key'
+PUSHOVER_USER_KEY = 'This is your user key'
+
