@@ -1,0 +1,22 @@
+# Path where images appear for processing
+UPLOADPATH = '/tmp/nvrtest/'
+
+# MySQL
+MYSQL_HOST = 'localhost'
+MYSQL_USER = 'nvr'
+MYSQL_PASSWORD = '12345'
+MYSQL_DATABASE = 'nvr'
+
+# Deepstack AI
+DEEPSTACK_HOST = 'http://localhost:79'
+DEEPSTACK_API_KEY = ''
+
+# CodeProjectAI
+CODEPROJECT_HOST = 'http://localhost:32168'
+CODEPROJECT_API_KEY = ''
+
+# OpenALPR via OpenAPI
+OPENAPI_OPENALPR_HOST = 'https://openalpr.p.rapidapi.com'
+OPENAPI_OPENALPR_API_KEY = 'abc123'
+OPENAPI_OPENALPR_COUNTRY = 'USA'
+

@@ -1,0 +1,122 @@
+#! /usr/bin/python3 
+import cv2
+import numpy as np
+import mysql.connector
+import requests
+import json
+import settings
+from io import BytesIO
+from sys import argv
+
+
+# Connect to the database
+db_connection = mysql.connector.connect(
+    host=settings.MYSQL_HOST,
+    user=settings.MYSQL_USER,
+    password=settings.MYSQL_PASSWORD,
+    database=settings.MYSQL_DATABASE
+)
+
+# Load the image from the database
+def load_image_from_database(id):
+    query = f"SELECT image FROM images WHERE id = {id}"
+    cursor = db_connection.cursor()
+    cursor.execute(query)
+    result = cursor.fetchone()
+    cursor.close()
+    if result is not None:
+        image_data = BytesIO(result[0])
+        image = np.load(image_data, allow_pickle=True)
+        return image
+    return None
+
+# Save the detected objects to the database
+def save_detected_objects_to_database(id, object, x_min, x_max, y_min, y_max, confidence, extra):
+    query = f"INSERT INTO predictions VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+    cursor = db_connection.cursor()
+    data_tuple = (id, object, x_min, x_max, y_min, y_max, confidence, extra)
+    print(data_tuple)
+    cursor.execute(query,data_tuple)
+    db_connection.commit()
+    cursor.close()
+
+# Perform object/plate detection using OpenALPR
+def perform_object_detection(image, id):
+    url = f"{settings.OPENAPI_OPENALPR_HOST}/recognize"
+    headers = {
+               'X-RapidAPI-Key': settings.OPENAPI_OPENALPR_API_KEY, 
+               'X-RapidAPI-Host': 'openalpr.p.rapidapi.com'
+    }
+    querystring = {"country": settings.OPENAPI_OPENALPR_COUNTRY, "recognize_vehicle": "1"}
+    _, img_encoded = cv2.imencode('.jpg', image)
+    files = {'image': ('image.jpg', img_encoded.tobytes(), 'image/jpeg')}
+    response = requests.post(url, headers=headers, files=files, params=querystring)
+    if response.status_code == 200:
+        response_data = response.json()
+        for obj in response_data['results']:
+            label = 'plate'
+            x_min = int(obj['coordinates'][0]['x'])
+            x_max = int(obj['coordinates'][2]['x'])
+            y_min = int(obj['coordinates'][0]['y'])
+            y_max = int(obj['coordinates'][2]['y'])
+            confidence = int(obj['confidence']*100)/100
+            extra = obj['plate']
+            
+            # Save detected objects to the database
+            save_detected_objects_to_database(id, label, x_min, x_max, y_min, y_max, confidence, extra)
+
+            label = 'region'
+            extra = obj['region']
+            save_detected_objects_to_database(id, label, x_min, x_max, y_min, y_max, confidence, extra)
+
+            label = 'orientation'
+            extra = obj['vehicle']['orientation'][0]['name']
+            confidence = obj['vehicle']['orientation'][0]['confidence']
+            save_detected_objects_to_database(id, label, x_min, x_max, y_min, y_max, confidence, extra)
+
+            label = 'year'
+            extra = obj['vehicle']['year'][0]['name']
+            confidence = obj['vehicle']['year'][0]['confidence']
+            save_detected_objects_to_database(id, label, x_min, x_max, y_min, y_max, confidence, extra)
+
+            label = 'make_model'
+            extra = obj['vehicle']['make_model'][0]['name']
+            confidence = obj['vehicle']['make_model'][0]['confidence']
+            save_detected_objects_to_database(id, label, x_min, x_max, y_min, y_max, confidence, extra)
+
+            label = 'color'
+            extra = obj['vehicle']['color'][0]['name']
+            confidence = obj['vehicle']['color'][0]['confidence']
+            save_detected_objects_to_database(id, label, x_min, x_max, y_min, y_max, confidence, extra)
+
+            label = 'body_type'
+            extra = obj['vehicle']['body_type'][0]['name']
+            confidence = obj['vehicle']['body_type'][0]['confidence']
+            save_detected_objects_to_database(id, label, x_min, x_max, y_min, y_max, confidence, extra)
+
+        return 1 
+    else:
+        print("Error performing object detection:", response.text)
+    return 0
+
+# Main script
+def main(id):
+    # Load image from the database
+    image = load_image_from_database(id)
+    if image is None:
+        print("Image not found in the database.")
+        return
+
+    # Perform object detection
+    detected_objects = perform_object_detection(image, id)
+    if detected_objects == 0:
+        print("No objects detected.")
+        return
+
+    print("Detected objects saved to the database.")
+
+if __name__ == '__main__':
+    id = argv[1] 
+    main(id)
+
+

@@ -1,0 +1,1 @@
+../plugins-available/alpr-with-codeproject-ai.py

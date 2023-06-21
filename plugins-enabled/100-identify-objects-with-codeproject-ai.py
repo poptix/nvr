@@ -1,0 +1,1 @@
+../plugins-available/identify-objects-with-codeproject-ai.py
